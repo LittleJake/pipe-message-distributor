@@ -1,0 +1,56 @@
+version: '3'
+services:
+  web:
+    build:
+      context: ./build/web
+    ports:
+      - "6080:6080"
+    depends_on:
+      - db
+      - redis
+    networks:
+      outer:
+        aliases:
+          - web
+      inner:
+        aliases:
+          - web
+  consumer:
+    build:
+      context: ./build/consumer
+    depends_on:
+      - db
+      - redis
+    networks:
+      inner:
+        aliases:
+          - cm
+  db:
+    image: "clickhouse/clickhouse-server:22.2.2.1-alpine"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      # - "/etc/clickhouse-server:/etc/clickhouse-server/"
+      # - "/var/lib/clickhouse/:/var/lib/clickhouse/"
+      # - "/var/log/clickhouse-server/:/var/log/clickhouse-server/"
+      - "./sql/init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "./sql/test.sql:/docker-entrypoint-initdb.d/test.sql"
+    networks:
+      inner:
+        aliases:
+          - ch
+    
+  redis:
+    image: "redis:6.2.6"
+    sysctls:
+      - net.core.somaxconn=1024
+    networks:
+      inner:
+        aliases:
+          - rd
+    entrypoint: redis-server --appendonly no --save ""
+networks:
+  inner: {}
+  outer: {}

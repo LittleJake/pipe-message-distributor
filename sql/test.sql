@@ -1,0 +1,6 @@
+INSERT INTO pipe.pipe_config (uuid,name,config,create_time) VALUES ('PIPE_CA716288F42756E538E800FE2AB07FED11B5DB73A1517FC92756E538E800FE2A','bark','{"type":"bark","token":""}','2022-06-22 15:21:32');
+INSERT INTO pipe.pipe_config (uuid,name,config,create_time) VALUES ('PIPE_CA716288F42756E538E800FE2AB07FED11B5DB73A1517FC92756E538E800FE2A','fcm','{"type":"fcm","token":""}','2022-01-14 15:56:33');
+INSERT INTO pipe.pipe_config (uuid,name,config,create_time) VALUES ('PIPE_CA716288F42756E538E800FE2AB07FED11B5DB73A1517FC92756E538E800FE2A','telegram','{"type":"telegram","token":"","chat_id":""}','2022-01-11 11:38:17');
+INSERT INTO pipe.pipe_config (uuid,name,config,create_time) VALUES ('PIPE_CA716288F42756E538E800FE2AB07FED11B5DB73A1517FC92756E538E800FE2A','wxwork','{"type":"wxwork","agentid":1000002,"touser":"","corpid":"","corpsecret":""}','2022-01-10 16:14:42');
+
+INSERT INTO pipe.pipe_user (uuid,avatar,ip,github_id,wechat_id,create_time) VALUES ('PIPE_CA716288F42756E538E800FE2AB07FED11B5DB73A1517FC92756E538E800FE2A','','0.0.0.0',2741580717,2741580717,'2022-01-10 16:06:12');
