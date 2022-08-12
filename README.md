@@ -2,6 +2,7 @@
 
 ![Apache2.0](https://img.shields.io/badge/License-Apache2.0-green)
 ![](https://img.shields.io/badge/Python-%3E%3D%203.6-blue)
+[![CodeQL](https://github.com/LittleJake/pipe-message-distributor/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/LittleJake/pipe-message-distributor/actions/workflows/codeql-analysis.yml)
 
 ![GitHub Repo stars](https://img.shields.io/github/stars/LittleJake/pipe-message-distributor?style=social)
 
