@@ -120,3 +120,14 @@ class Message_fcm(Message):
                 },
                 token = self._config['token']
             )
+
+class Message_serverchan(Message):
+    '''
+    Server酱消息
+    '''
+    def __init__(self, config, data):
+        Message.__init__(self, data)
+        self._config = config
+    
+    def to_api_data(self):
+        return {"title": self._data["title"], "desp": self.get_content()}

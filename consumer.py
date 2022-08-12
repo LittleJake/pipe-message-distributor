@@ -91,6 +91,17 @@ def send_bark_handler(send_data):
     else:
         logging.info("发送失败")
 
+
+# 发送Server酱消息
+def send_server_chan_handler(send_data):
+    req = requests.post(url="https://sctapi.ftqq.com/{}.send".format(send_data.get_config()['token']),data=send_data.to_api_data(),timeout=(5, 5))
+    resp = req.json()
+    logging.debug("Server酱接口返回："+str(resp))
+    if resp["code"] == 200:
+        logging.info("发送成功，耗时："+str(time.time()-float(send_data.get_data()["time"])))
+    else:
+        logging.info("发送失败")
+
 # 异步插入数据库
 def send_insert_handler(message):
     logging.debug("插入数据库"+str(message))
@@ -172,6 +183,15 @@ def data_row_handler(row):
             if send_data.need_save():
                 send_insert_handler(send_data.to_insert_data())
             send_bark_handler(send_data)
+        
+
+        elif config['type'] == 'server_chan':
+            logging.info("进入server_chan分支")
+            send_data = Message_serverchan(config, d)
+            if send_data.need_save():
+                send_insert_handler(send_data.to_insert_data())
+            send_server_chan_handler(send_data)
+
         elif config['type'] == 'mail':
             # TODO
             pass
@@ -248,7 +268,7 @@ def redis_handler_stream():
 
 thread = []
 
-for i in range(5):
+for i in range(Config.CONSUMER_THREAD):
     t = Thread(target=redis_handler_stream)
     t.start()
     thread.append(t)

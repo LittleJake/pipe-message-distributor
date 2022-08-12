@@ -18,3 +18,9 @@ CLICKHOUSE_PASSWORD = ""
 
 # Platform
 PLATFORM_MSG_URL = "http://localhost:6080/get_message"
+GITHUB_CLIENT_ID = ""
+GITHUB_CLIENT_SECRET = ""
+
+
+# Consumer
+CONSUMER_THREAD = 5
