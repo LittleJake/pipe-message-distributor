@@ -18,33 +18,19 @@ import uuid
 import Util
 from PipeMessage import *
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    # format="%(asctime)s [*] %(processName)s  %(threadName)s  %(message)s"
-    format="%(asctime)s %(message)s"
-)
 
-logging.info("Consumer started.")
-
-try:
-    cred = credentials.Certificate("fcm_token.json")
-    default_app = firebase_admin.initialize_app(cred)
-except Exception as e:
-    logging.error(e)
-
-# 初始化redis
-redis_pool = redis.ConnectionPool(host=Config.REDIS_HOST, port=Config.REDIS_PORT, decode_responses=True)
-rd = redis.Redis(connection_pool=redis_pool)
-
-try:
-    rd.xgroup_destroy(Config.REDIS_MSG_STREAM, Config.REDIS_GROUP_NAME)
-except: pass
-try:
-    rd.xgroup_destroy(Config.REDIS_INSERT_STREAM, Config.REDIS_GROUP_NAME)
-except: pass
-rd.xgroup_create(Config.REDIS_MSG_STREAM, Config.REDIS_GROUP_NAME, id='0-0', mkstream=True)
-rd.xgroup_create(Config.REDIS_INSERT_STREAM, Config.REDIS_GROUP_NAME, id='0-0', mkstream=True)
-pool = ClickHousePool()
+# redis 组初始化
+# should provide unique group name
+def redis_init_group(redis_stream_name, redis_group_name):
+    if rd.exists(redis_stream_name):
+        logging.debug(rd.xinfo_groups(redis_stream_name))
+        if redis_group_name in [row["name"] for row in rd.xinfo_groups(redis_stream_name)]:
+            logging.error(redis_stream_name + "group exist. exiting.")
+            exit(-1)
+        # stream exist, may have race condition
+        rd.xgroup_create(redis_stream_name, redis_group_name, id='0-0', mkstream=False)
+    else:
+        rd.xgroup_create(redis_stream_name, redis_group_name, id='0-0', mkstream=True)
 
 
 # 发送企业微信消息
@@ -254,17 +240,40 @@ def redis_handler_stream():
 
         # logging.info("time: %s, handle data: %s" % (time.time()-t1, 100))
 
-# def c():
-#     while True:
-#         previous = rd.llen(Config.REDIS_MSG_QUEUE)
-#         previous2 = rd.llen(Config.REDIS_MSG_QUEUE)
-#         time.sleep(10)
-#         logging.info("pending job: %s msg" 
-#         % (rd.xpending(Config.REDIS_MSG_STREAM, Config.REDIS_GROUP_NAME)["pending"]))
-#         logging.info("inserted %s msg/10s" 
-#         % (previous2 - rd.llen(Config.REDIS_INSERT_QUEUE)))
-#         logging.info("connection idle: %s, active: %s." 
-#         % (pool.len_available(), pool.len_active()))
+def debug_info():
+    while True:
+        time.sleep(10)
+        logging.debug(rd.xinfo_groups(Config.REDIS_INSERT_STREAM))
+        logging.debug(rd.xinfo_groups(Config.REDIS_MSG_STREAM))
+
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    # format="%(asctime)s [*] %(processName)s  %(threadName)s  %(message)s"
+    format="%(asctime)s %(message)s"
+)
+
+logging.info("Consumer started.")
+
+try:
+    cred = credentials.Certificate("fcm_token.json")
+    default_app = firebase_admin.initialize_app(cred)
+except Exception as e:
+    logging.error(e)
+
+# 初始化redis
+redis_pool = redis.ConnectionPool(host=Config.REDIS_HOST, port=Config.REDIS_PORT, decode_responses=True)
+rd = redis.Redis(connection_pool=redis_pool)
+
+
+# 初始化流
+redis_init_group(Config.REDIS_MSG_STREAM, Config.REDIS_GROUP_NAME)
+redis_init_group(Config.REDIS_INSERT_STREAM, Config.REDIS_GROUP_NAME)
+
+pool = ClickHousePool()
+
+
 
 thread = []
 
@@ -272,6 +281,11 @@ for i in range(Config.CONSUMER_THREAD):
     t = Thread(target=redis_handler_stream)
     t.start()
     thread.append(t)
+    
+
+# t = Thread(target=debug_info)
+# t.start()
+# thread.append(t)
 
 for i in thread:
     i.join()
