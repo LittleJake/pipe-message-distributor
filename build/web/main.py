@@ -20,10 +20,13 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
-redis_pool = redis.ConnectionPool(host=Config.REDIS_HOST, port=Config.REDIS_PORT, decode_responses=True)
+redis_pool = redis.ConnectionPool(
+    host=Config.REDIS_HOST, port=Config.REDIS_PORT, decode_responses=True)
 rd = redis.Redis(connection_pool=redis_pool)
 ck_pool = ClickHousePool()
 
+
+# 测试页面
 @app.route('/')
 def hello_world():
     ck = ck_pool.get_connection()
@@ -51,14 +54,14 @@ def hello_world():
 
 
 # Test function
-@app.route('/add_user',methods=["GET"])
+@app.route('/add_user', methods=["GET"])
 def add_user():
     ck = ck_pool.get_connection()
     try:
         t1 = time.time()
         n = request.args.get("n", 1, int)
         ck.execute("INSERT INTO pipe.pipe_user (github_id, wechat_id) VALUES",
-        ((x, x * random.randint(1, 10)) for x in range(n)))
+                   ((x, x * random.randint(1, 10)) for x in range(n)))
         return "OK, time: %s" % (time.time()-t1)
     except Exception as e:
         logging.error(e)
@@ -70,7 +73,7 @@ def add_user():
 # @app.route('/get_uid', methods=["GET"])
 # def get_uid():
 #     # read uid from redis TTL 5 mins.
-    
+
 
 @app.route('/github', methods=["GET"])
 def github():
@@ -88,17 +91,18 @@ def github():
             "code": code
         }, headers={"Accept": "application/json"})
         resp = req.json()
-        req = requests.get(url="https://api.github.com/user", headers={"Accept": "application/json", "Authorization": "token "+resp.get("access_token")})
+        req = requests.get(url="https://api.github.com/user", headers={
+                           "Accept": "application/json", "Authorization": "token "+resp.get("access_token")})
         resp = req.json()
         if req.status_code == 200:
             return Response(
                 _add_user(
                     github_id=resp["id"],
                     data={
-                    "avatar": resp["avatar_url"],
-                    "ip": request.remote_addr
-                }), 200)
-        
+                        "avatar": resp["avatar_url"],
+                        "ip": request.remote_addr
+                    }), 200)
+
         return Response("Unauthorized", 403)
         # data.id, data.avatar_url, data
     else:
@@ -116,7 +120,8 @@ def _add_user(github_id, data={}):
         )
         # Race condition
         if len(q) < 1:
-            ck.execute("INSERT INTO pipe.pipe_user (github_id) VALUES", ((github_id,),))
+            ck.execute(
+                "INSERT INTO pipe.pipe_user (github_id) VALUES", ((github_id,),))
 
             _update_user(github_id, data)
             q = ck.execute(
@@ -143,12 +148,12 @@ def _update_user(github_id, data={}):
         else:
             sql = "ALTER TABLE pipe.pipe_user UPDATE {} WHERE github_id=%(github_id)s".format(
                 ",".join(["{}=%({})s".format(k, k) for k in data.keys()])
-                )
+            )
             data["github_id"] = github_id
             ck.execute(
-                    sql,
-                    data
-                )
+                sql,
+                data
+            )
 
         return q[0][0]
     except Exception as e:
@@ -158,13 +163,16 @@ def _update_user(github_id, data={}):
         ck_pool.release_connection(ck)
 
 # Test
-@app.route('/add_one_user',methods=["GET"])
+
+
+@app.route('/add_one_user', methods=["GET"])
 def add_one_user():
     ck = ck_pool.get_connection()
     try:
         t1 = time.time()
         x = random.randint(100000000, 10000000000)
-        ck.execute("INSERT INTO pipe.pipe_user (github_id, wechat_id) VALUES", ((x, x),))
+        ck.execute(
+            "INSERT INTO pipe.pipe_user (github_id, wechat_id) VALUES", ((x, x),))
         result = ck.execute(
             "SELECT uuid FROM pipe.pipe_user where github_id=%(github_id)",
             {"github_id": x}
@@ -178,7 +186,7 @@ def add_one_user():
 
 
 # Test
-@app.route('/add_one_config',methods=["POST"])
+@app.route('/add_one_config', methods=["POST"])
 def add_one_config():
     ck = ck_pool.get_connection()
     try:
@@ -187,7 +195,8 @@ def add_one_config():
         name = request.form.get("name", "", str)
         config = request.form.get("config", "{}", str)
 
-        ck.execute("INSERT INTO pipe.pipe_config (uuid, name, config) VALUES", ((uuid, name, config),))
+        ck.execute("INSERT INTO pipe.pipe_config (uuid, name, config) VALUES", ((
+            uuid, name, config),))
 
         return "OK, time: %s" % (time.time()-t1)
     except Exception as e:
@@ -198,7 +207,7 @@ def add_one_config():
 
 
 # Test
-@app.route('/get_config',methods=["GET"])
+@app.route('/get_config', methods=["GET"])
 def get_config():
     ck = ck_pool.get_connection()
     try:
@@ -235,7 +244,7 @@ def get_config():
 #     return "OK, time: %s" % (time.time()-t1)
 
 
-@app.route('/send_msg_stream',methods=["POST"])
+@app.route('/send_msg_stream', methods=["POST"])
 def send_msg_stream():
     t1 = time.time()
     uid = request.args.get("uuid", "", str)
@@ -244,7 +253,8 @@ def send_msg_stream():
     content = request.form.get("content", "", str)
     title = request.form.get("title", "", str)
 
-    data = {"uuid": uid, "name": name, "save": save, "title": title, "content": content, "time": time.time()}
+    data = {"uuid": uid, "name": name, "save": save,
+            "title": title, "content": content, "time": time.time()}
 
     Thread(target=rd.xadd, args=(Config.REDIS_MSG_STREAM, data)).start()
     return "OK, time: %s" % (time.time()-t1)
@@ -261,7 +271,7 @@ def send_msg_stream():
 #         result = ck.execute(
 #             "SELECT uuid FROM pipe.pipe_user WHERE wechat_id > {} ORDER BY wechat_id LIMIT {}"
 #             .format(random.randint(0, 1000000), n))
-        
+
 #         # for row in result:
 #         #     ck.execute("INSERT INTO pipe.pipe_config (uuid, name, config) VALUES",
 #         #     )
@@ -275,16 +285,16 @@ def send_msg_stream():
 #         ck_pool.release_connection(ck)
 
 
-@app.route('/get_message',methods=["GET"])
+@app.route('/get_message', methods=["GET"])
 def get_message():
     ck = ck_pool.get_connection()
     try:
         t1 = time.time()
         uuid = request.args.get("uuid", "", str)
         message_id = request.args.get("id", "", str)
-        
+
         result = ck.execute(
-            "SELECT title, message FROM pipe.pipe_message WHERE uuid=%(uuid)s and message_id=%(message_id)s",
+            "SELECT title, message FROM pipe.pipe_message WHERE uuid = %(uuid)s and message_id = %(message_id)s",
             {"uuid": uuid, "message_id": message_id}
         )
 
@@ -300,9 +310,12 @@ def get_message():
             'markdown.extensions.toc'
         ]
 
-        body = markdown.markdown(result[0][1],extensions=exts)
-
-        return render_template("message_template.html", title=result[0][0], body=body, time="OK, time: %s" % (time.time()-t1))
+        body = markdown.markdown(result[0][1], extensions=exts)
+        
+        if request.is_xhr:
+            return jsonify({"code": 200, "data": {"title": result[0][0], "body": body}})
+        else:
+            return render_template("message_template.html", title=result[0][0], body=body, time="OK, time: %s" % (time.time()-t1))
     except Exception as e:
         logging.error(e)
         return Response("HTTP 500 INTERNAL ERROR", 500)
@@ -310,9 +323,10 @@ def get_message():
         ck_pool.release_connection(ck)
 
 
-@app.route('/get_notice',methods=["GET"])
+@app.route('/get_notice', methods=["GET"])
 def get_notice():
     return jsonify(status=200, data="This is a notice.")
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0")

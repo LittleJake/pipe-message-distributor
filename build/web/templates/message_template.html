@@ -10,6 +10,7 @@
         <hr>
         <div id="notice"></div>
         <div>
+            <!-- 可能需要处置XSS、CROS攻击场景 -->
             {{ body | safe }}
         </div>
         <div>

@@ -5,7 +5,7 @@ class ClickHousePool():
     __active__connection__ = []
     __available__connection__ = []
 
-    def __init__(self, size=10):
+    def __init__(self, size=200):
         self.__available__connection__ += [self.__new__connection__() for i in range(size)]
 
     def __new__connection__(self):
