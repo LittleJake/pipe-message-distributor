@@ -1,5 +1,5 @@
 FROM python:3.8-slim-buster
-MAINTAINER LittleJake https://littlejake.net
+MAINTAINER LittleJake https://github.com/LittleJake/
 
 WORKDIR /app
 COPY . /app
