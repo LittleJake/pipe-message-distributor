@@ -5,3 +5,5 @@ Markdown==3.3.6
 pytz==2021.3
 redis==4.4.4
 requests==2.31.0
+protobuf>=4.25.8 # not directly required, pinned by Snyk to avoid a vulnerability
+urllib3>=2.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
